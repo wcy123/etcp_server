@@ -110,7 +110,10 @@ handle_cast(Msg, State) ->
 %%--------------------------------------------------------------------
 handle_info(timeout, #state{module=Module, opts=Opts, socket=Socket, state=undefined} = State) ->
     {ok, AcceptSocket} = gen_tcp:accept(State#state.socket),
-    true = unregister(?SERVER),
+    case process_info(self(),registered_name) of
+        {registered_name,Name} -> unregister(Name);
+        _Otherwise -> ok
+    end,
     {ok, Pid} = supervisor:start_child(etcp_server_sup,['$listen_again', State]), % continue to listen
     ok = gen_tcp:controlling_process(Socket,Pid),
     ok = inet:setopts(AcceptSocket,Opts),
@@ -162,5 +165,5 @@ code_change(_OldVsn, State, _Extra) ->
 
 
 %%%===================================================================
-%%% Internal functions
+%%% internal functions
 %%%===================================================================
