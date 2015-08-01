@@ -1,0 +1,12 @@
+{application, etcp_server,
+ [
+  {description, "A Simple TCP server framework"},
+  {vsn, "1"},
+  {registered, []},
+  {applications, [
+                  kernel,
+                  stdlib
+                 ]},
+  {mod, { etcp_server_app, []}},
+  {env, []}
+ ]}.
