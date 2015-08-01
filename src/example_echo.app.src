@@ -1,0 +1,12 @@
+{application, example_echo,
+ [
+  {description, "A Simple TCP server framework"},
+  {vsn, "1"},
+  {registered, []},
+  {applications, [
+                  kernel,
+                  stdlib
+                 ]},
+  {mod, { example_echo_app, []}},
+  {env, []}
+ ]}.
