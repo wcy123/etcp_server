@@ -19,7 +19,7 @@
 
 -define(SERVER, ?MODULE).
 
--record(state, {module,socket,state=undefined,opts=[]}).
+-record(state, {module,socket,parent,state=undefined,opts=[]}).
 
 %%%===================================================================
 %%% API
@@ -33,7 +33,7 @@
 %% @end
 %%--------------------------------------------------------------------
 start_link(Module, Port, ListenOpts, Opts) ->
-    gen_server:start_link({local, ?SERVER}, ?MODULE,  [Module, Port, ListenOpts, Opts],[]).
+    gen_server:start_link({local, ?SERVER}, ?MODULE,  [Module, Port, ListenOpts, Opts, self()],[]).
 start_link('$listen_again', State) ->
     gen_server:start_link({local, ?SERVER}, ?MODULE,  ['$listen_again', State],[]).
 %%%===================================================================
@@ -51,9 +51,9 @@ start_link('$listen_again', State) ->
 %%                     {stop, Reason}
 %% @end
 %%--------------------------------------------------------------------
-init([M, Port, ListenOpts, Opts]) ->
+init([M, Port, ListenOpts, Opts, Parent]) ->
     {ok , Socket} = gen_tcp:listen(Port,ListenOpts),
-    {ok, #state{module = M, socket=Socket, state=undefined, opts = Opts}, 0};
+    {ok, #state{module = M, parent=Parent, socket=Socket, state=undefined, opts = Opts}, 0};
 init(['$listen_again',State]) ->
     {ok, State , 0}.
 
@@ -114,7 +114,7 @@ handle_info(timeout, #state{module=Module, opts=Opts, socket=Socket, state=undef
         {registered_name,Name} -> unregister(Name);
         _Otherwise -> ok
     end,
-    {ok, Pid} = supervisor:start_child(etcp_server_sup,['$listen_again', State]), % continue to listen
+    {ok, Pid} = supervisor:start_child(State#state.parent,['$listen_again', State]), % continue to listen
     ok = gen_tcp:controlling_process(Socket,Pid),
     ok = inet:setopts(AcceptSocket,Opts),
     case Module:init([Socket]) of
