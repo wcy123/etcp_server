@@ -74,8 +74,7 @@ handle_call(_Request, _From, State) ->
 %%                                  {stop, Reason, State}
 %% @end
 %%--------------------------------------------------------------------
-handle_cast({become_controller, Socket}, State) ->
-    error_logger:info_report({10, self(), Socket}),
+handle_cast(_Msg, State) ->
     {noreply, State}.
 
 %%--------------------------------------------------------------------
@@ -88,6 +87,9 @@ handle_cast({become_controller, Socket}, State) ->
 %%                                   {stop, Reason, State}
 %% @end
 %%--------------------------------------------------------------------
+handle_info({become_controller, Socket}, State) ->
+    error_logger:info_report({10, self(), Socket}),
+    {noreply, State};
 handle_info({tcp,Socket,Data}, State) ->
     ok = gen_tcp:send(Socket, [">>:", Data]),
     inet:setopts(Socket,[{active,once}]),

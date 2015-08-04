@@ -48,7 +48,11 @@ start_worker(StartChild) ->
                 {ok, WorkerPid} = StartChild(),
                 error_logger:info_report({self(), new_child_is, WorkerPid}),
                 ok = gen_tcp:controlling_process(Socket, WorkerPid),
-                ok = gen_server:cast(WorkerPid, {become_controller, Socket}),
+                %%ok = gen_server:cast(WorkerPid, {become_controller, Socket}),
+
+                %% in order to be more general, because the worker
+                %% might not be a gen_server
+                WorkerPid ! {become_controller, Socket},
                 error_logger:info_report({self(), handover_controller_to_child, WorkerPid})
             catch
                 E:X -> error_logger:info_report({8, self(), E,X})
