@@ -49,27 +49,18 @@ start_link(Port,Opts,Module) ->
 %%                     {error, Reason}
 %% @end
 %%--------------------------------------------------------------------
-init([Port, Opts, Module]) ->
-
+init([Port, Opts, Fun]) ->
     SupFlags = #{strategy => one_for_one,
                  intensity => 1,
                  period => 5},
-
     ListenerChild = #{id => etcp_listener,
-                      start => { etcp_listener, start_link, [Port, Opts, self()]},
+                      start => { etcp_listener, start_link, [Port, Opts, Fun]},
                       restart => permanent,
                       shutdown => 5000,
                       type => worker,
                       modules => [etcp_listener]},
-    WorkerChild = #{ id => etcp_worker_sup,
-                     start => { etcp_worker_sup, start_link, [Module] },
-                     restart => permanent,
-                     shutdown => infinity,
-                     type => supervisor,
-                     modules => [ etcp_worker_sup ]
-                   },
-    {ok, {SupFlags, [ListenerChild ,WorkerChild
-                    ]}}.
+
+    {ok, {SupFlags, [ListenerChild]}}.
 
 %%%===================================================================
 %%% Internal functions

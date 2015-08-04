@@ -14,7 +14,7 @@
 
 
 %% gen_server callbacks
--export([start_link/1,init/1, handle_call/3, handle_cast/2, handle_info/2,
+-export([start_link/0,init/1, handle_call/3, handle_cast/2, handle_info/2,
          terminate/2, code_change/3]).
 
 -define(SERVER, ?MODULE).
@@ -24,8 +24,8 @@
 %%%===================================================================
 %%% API
 %%%===================================================================
-start_link(Socket) ->
-    gen_server:start_link(?MODULE, [Socket],[]).
+start_link() ->
+    gen_server:start_link(?MODULE, [],[]).
 
 %%%===================================================================
 %%% gen_server callbacks
@@ -42,8 +42,8 @@ start_link(Socket) ->
 %%                     {stop, Reason}
 %% @end
 %%--------------------------------------------------------------------
-init([Socket]) ->
-    io:format("good got it ~p~n",[[self(), Socket]]),
+init([]) ->
+    io:format("good got it ~p~n",[[self(), 1]]),
     {ok, #state{}}.
 
 %%--------------------------------------------------------------------
@@ -89,7 +89,7 @@ handle_cast({become_controller, Socket}, State) ->
 %% @end
 %%--------------------------------------------------------------------
 handle_info({tcp,Socket,Data}, State) ->
-    ok = gen_tcp:send(Socket, [">:", Data]),
+    ok = gen_tcp:send(Socket, [">>:", Data]),
     inet:setopts(Socket,[{active,once}]),
     case Data == "test\n" of
         true -> {noreply, State,1000};

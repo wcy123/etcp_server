@@ -3,53 +3,55 @@
          start_link/3,
          init/3, %% this is actually a private function
          start_worker/1  %% this is actually a private function
-         ]).
+        ]).
 
 
-start_link(Port, Opts, ListenerSupervisor) ->
-    error_logger:info_report({1, Port, Opts, ListenerSupervisor}),
-    proc_lib:start_link(etcp_listener,init,[Port,Opts,ListenerSupervisor]).
+start_link(Port, Opts, StartChild) ->
+    error_logger:info_report({self(), start_listener, Port, Opts, StartChild}),
+    proc_lib:start_link(etcp_listener,init,[Port,Opts,StartChild]).
 
-init(Port,Opts,ListenerSupervisor) ->
-    error_logger:info_report({2, Port, Opts, ListenerSupervisor}),
-    WorkerPid = proc_lib:spawn_link(?MODULE, start_worker,[ListenerSupervisor]),
+init(Port,Opts,StartChild) ->
+    error_logger:info_report({self(), start_worker, Port, Opts, StartChild}),
+    WorkerPid = proc_lib:spawn_link(?MODULE, start_worker,[StartChild]),
     Deb = sys:debug_options([]),
+    error_logger:info_report({self(), gen_listen, Port, Opts, StartChild}),
     XX = gen_tcp:listen(Port,Opts),
-    error_logger:info_report({3, XX, Port, Opts, ListenerSupervisor}),
+    error_logger:info_report({self(), listen_ok, Port, Opts, StartChild}),
     {ok, Socket} = XX,
     proc_lib:init_ack({ok,self()}),
-    loop(Socket,ListenerSupervisor, WorkerPid, Deb).
+    loop(Socket,StartChild, WorkerPid, Deb).
 
-loop(Socket,ListenerSupervisor,WorkerPid, Deb) ->
-    error_logger:info_report({4, self(), Socket,ListenerSupervisor, WorkerPid}),
-    {ok, AcceptedSocket} = gen_tcp:accept(Socket),
-    error_logger:info_report({5, self(), AcceptedSocket, Socket,ListenerSupervisor, WorkerPid}),
-    ok = gen_tcp:controlling_process(AcceptedSocket,WorkerPid),
-    WorkerPid ! { new_conection, AcceptedSocket},
-    error_logger:info_report({6, self(), AcceptedSocket, Socket,ListenerSupervisor, WorkerPid}),
-    NewWorkerPid = proc_lib:spawn_link(?MODULE, start_worker,[ListenerSupervisor]),
-    error_logger:info_report({7, AcceptedSocket, Socket,ListenerSupervisor, NewWorkerPid}),
-    %% restart the loop as soon as possible.
-    loop(Socket,ListenerSupervisor,NewWorkerPid, Deb).
-
-
-start_worker(ListenerSupervisor) ->
+loop(Socket,StartChild,WorkerPid, Deb) ->
+    try
+        error_logger:info_report({self(), start_to_accept, Socket,StartChild, WorkerPid}),
+        {ok, AcceptedSocket} = gen_tcp:accept(Socket),
+        error_logger:info_report({self(), new_connection, AcceptedSocket, Socket,StartChild, WorkerPid}),
+        ok = gen_tcp:controlling_process(AcceptedSocket,WorkerPid),
+        error_logger:info_report({self(), handover_controller, AcceptedSocket, Socket,StartChild, WorkerPid}),
+        WorkerPid ! { new_conection, AcceptedSocket},
+        error_logger:info_report({self(), signal_controller, AcceptedSocket, Socket,StartChild, WorkerPid}),
+        NewWorkerPid = proc_lib:spawn_link(?MODULE, start_worker,[StartChild]),
+        error_logger:info_report({self(), start_new_worker, AcceptedSocket, Socket,StartChild, NewWorkerPid}),
+        %% restart the loop as soon as possible.
+        loop(Socket,StartChild,NewWorkerPid, Deb)
+    catch E:M ->
+            error_logger:error_report({self(),E,M,erlang:get_stacktrace()})
+    end.
+start_worker(StartChild) ->
+    error_logger:info_report({self(), waiting_for_controller}),
     receive
         { new_conection, Socket } ->
-
             %% when match faild, the pair of process aborted,
             %% hopefully, listener_supervisor will restart it.
-            Children = supervisor:which_children(ListenerSupervisor),
             try
-              {_Id, WorkerSupPid, _Type, _Modules} = lists:keyfind(etcp_worker_sup,1,Children),
-              true = is_process_alive(WorkerSupPid),
-              {ok, WorkerPid} = supervisor:start_child(WorkerSupPid,[Socket]),
-              error_logger:info_report({8, self(), WorkerPid, Children}),
-              ok = gen_tcp:controlling_process(Socket, WorkerPid),
-              ok = gen_server:cast(WorkerPid, {become_controller, Socket})
+                error_logger:info_report({self(), start_new_child}),
+                {ok, WorkerPid} = StartChild(),
+                error_logger:info_report({self(), new_child_is, WorkerPid}),
+                ok = gen_tcp:controlling_process(Socket, WorkerPid),
+                ok = gen_server:cast(WorkerPid, {become_controller, Socket}),
+                error_logger:info_report({self(), handover_controller_to_child, WorkerPid})
             catch
-                E:X -> error_logger:info_report({8, self(), E,X, Children})
+                E:X -> error_logger:info_report({8, self(), E,X})
             end
-
     end,
     error_logger:info_report({self(), "fake worker ended"}).

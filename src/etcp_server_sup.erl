@@ -3,7 +3,7 @@
 -behaviour(supervisor).
 
 %% API
--export([start_link/1]).
+-export([start_link/0, start_child/1]).
 
 %% Supervisor callbacks
 -export([init/1]).
@@ -15,18 +15,14 @@
 %% API functions
 %% ===================================================================
 
-start_link(Port) ->
-    supervisor:start_link({local, ?MODULE}, ?MODULE, [Port]).
+start_link() ->
+    supervisor:start_link({local, ?MODULE}, ?MODULE, []).
+start_child(ChildSpec) ->
+    supervisor:start_child(?MODULE, ChildSpec).
 
 %% ===================================================================
 %% Supervisor callbacks
 %% ===================================================================
 
-init([Port]) ->
-    ChildSpec = {undefined,                     %id
-                 {etcp_server,start_link,[]},   %MFA
-                 temporary,                     %Restart
-                 2000,                          %2 second shutdown
-                 worker,
-                 [etcp_server]},
-    {ok, { {simple_one_for_one, 5, 10}, [ChildSpec]} }.
+init([]) ->
+    {ok, { {one_for_all, 5, 10}, []} }.
