@@ -20,7 +20,7 @@ start(_StartType, _StartArgs) ->
                    },
     {ok, WorkerSupPid} = etcp_server_sup:start_child(WorkerChildSpec),
     Fun = fun() -> supervisor:start_child(WorkerSupPid,[]) end,
-    {ok, _Pid} = etcp_listener_sup:start_link(5000,[{reuseaddr,true}],Fun),
+    {ok, _Pid} = etcp_listener_sup:start_link(echo,5000,[{reuseaddr,true}],Fun),
     {ok,RootPid}.
 
 stop(_State) ->
