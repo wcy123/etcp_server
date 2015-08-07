@@ -92,7 +92,7 @@ handle_info({become_controller, Socket}, State) ->
     {noreply, State};
 handle_info({tcp,Socket,Data}, State) ->
     ok = gen_tcp:send(Socket, [">>:", Data]),
-    inet:setopts(Socket,[{active,once}]),
+    ok = inet:setopts(Socket,[{active,once}]),
     case Data == "test\n" of
         true -> {noreply, State,1000};
         _ -> {noreply, State#state{value= State#state.value + 1}}
