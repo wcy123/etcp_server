@@ -22,13 +22,27 @@
 
 %%--------------------------------------------------------------------
 %% @doc
-%% Starts the supervisor
+%% Starts the listener supervisor
 %%
-%% @spec start_link() -> {ok, Pid} | ignore | {error, Error}
+%%   Name - the name of the server
+%%   Port - the port which is listening on
+%%   Opts - socket options
+%%   Fun - call back function.
+%%
+%%   When there is a new comer, the call back function is invoked in
+%%   the context of a worker process without any argument, the
+%%   callback function is expected to return {ok, Pid} where Pid is
+%%   the worker process id.
+%%
 %% @end
 %%--------------------------------------------------------------------
-start_link(Name, Port,Opts,Module) ->
-    supervisor:start_link({local, Name}, ?MODULE, [Port,Opts,Module]).
+-spec start_link(Name, Port, Opts, Fun) -> {ok, pid()} | ignore | {error, term()} when
+      Name :: atom(),
+      Port :: non_neg_integer(),
+      Opts :: [inet:socket_setopt()],
+      Fun :: function().
+start_link(Name, Port,Opts,Fun) ->
+    supervisor:start_link({local, Name}, ?MODULE, [Port,Opts,Fun]).
 
 %%%===================================================================
 %%% Supervisor callbacks
@@ -57,7 +71,6 @@ init([Port, Opts, Fun]) ->
                       shutdown => 5000,
                       type => worker,
                       modules => [etcp_listener]},
-
     {ok, {SupFlags, [ListenerChild]}}.
 
 %%%===================================================================

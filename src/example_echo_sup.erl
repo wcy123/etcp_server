@@ -6,7 +6,7 @@
 %%% @end
 %%% Created :  4 Aug 2015 by chunywan <wcy123@gmail.com>
 %%%-------------------------------------------------------------------
--module(etcp_worker_sup).
+-module(example_echo_sup).
 
 -behaviour(supervisor).
 
