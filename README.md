@@ -28,8 +28,22 @@ hello() ->
        end)}.
 ```
 
+The diagram of the supervisor tree.
 
 ```
+
+etc_listener_sup(Name)
+   |
+   `---- <x.x.x>(listener process) ----- <y.y.y>(worker_process)
+
+```
+
+The listener process is blocked at `gen_tcp:accept` and the worker
+process is blocked at `receive` `new_connection`.
+
+
+
+```erlang
 -module(etcp_listener).
 -export([
          start_link/3,
