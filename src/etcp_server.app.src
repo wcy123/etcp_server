@@ -1,4 +1,4 @@
-{application, example_echo,
+{application, etcp_server,
  [
   {description, "A Simple TCP server framework"},
   {vsn, "1"},
