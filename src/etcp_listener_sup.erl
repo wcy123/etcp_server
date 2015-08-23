@@ -62,15 +62,13 @@ start_link(Name, Port,Opts,Fun) ->
 %% @end
 %%--------------------------------------------------------------------
 init([Port, Opts, Fun]) ->
-    SupFlags = #{strategy => one_for_one,
-                 intensity => 1,
-                 period => 5},
-    ListenerChild = #{id => etcp_listener,
-                      start => { etcp_listener, start_link, [Port, Opts, Fun]},
-                      restart => permanent,
-                      shutdown => 5000,
-                      type => worker,
-                      modules => [etcp_listener]},
+    SupFlags = {one_for_one, 1,5},
+    ListenerChild = {etcp_listener,
+                      { etcp_listener, start_link, [Port, Opts, Fun]},
+                      permanent,
+                      5000,
+                      worker,
+                      [etcp_listener]},
     {ok, {SupFlags, [ListenerChild]}}.
 
 %%%===================================================================
