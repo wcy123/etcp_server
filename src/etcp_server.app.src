@@ -1,7 +1,7 @@
 {application, etcp_server,
  [
   {description, "A Simple TCP server framework"},
-  {vsn, "1"},
+  {vsn, git},
   {registered, []},
   {applications, [
                   kernel,
